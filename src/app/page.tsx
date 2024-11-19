@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { FaSearch, FaCopy } from 'react-icons/fa';
+import { FaSearch } from 'react-icons/fa';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai'; // スピナーアイコン
 
 export default function Home() {
     const [handle, setHandle] = useState('');
@@ -17,7 +18,6 @@ export default function Home() {
 
     const [result, setResult] = useState<ChannelResult | null>(null);
     const [loading, setLoading] = useState(false);
-    const [toast, setToast] = useState<string | null>(null);
 
     const handleSearch = async () => {
         if (!handle) return alert('ハンドルは必要です');
@@ -55,18 +55,6 @@ export default function Home() {
         }
     };
 
-    const copyToClipboard = async (text: string) => {
-        try {
-            await navigator.clipboard.writeText(text);
-            setToast('クリップボードにコピーしました！');
-            setTimeout(() => setToast(null), 3000); // トーストを3秒後に非表示
-        } catch (error) {
-            console.error('コピーに失敗しました:', error);
-            setToast('コピーに失敗しました。');
-            setTimeout(() => setToast(null), 3000);
-        }
-    };
-
     return (
         <div
             style={{
@@ -99,22 +87,28 @@ export default function Home() {
                     onClick={handleSearch}
                     style={{
                         padding: '20px',
-                        backgroundColor: '#FF6B5E',
+                        backgroundColor: loading ? '#ccc' : '#FF6B5E',
                         color: '#FFF',
                         border: 'none',
                         borderRadius: '4px',
-                        cursor: 'pointer',
+                        cursor: loading ? 'not-allowed' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                     }}
                     disabled={loading}
                 >
-                    <FaSearch size={20} />
+                    {loading ? <AiOutlineLoading3Quarters size={20} className="spin" /> : <FaSearch size={20} />}
                 </button>
             </div>
 
-            {result && (
+            {loading && (
+                <p style={{ fontSize: '1rem', color: '#555', marginTop: '20px' }}>
+                    検索中です。お待ちください...
+                </p>
+            )}
+
+            {result && !loading && (
                 <div
                     style={{
                         display: 'flex',
@@ -138,61 +132,23 @@ export default function Home() {
                         }}
                     />
                     <div style={{ textAlign: 'left' }}>
-                        <h2><strong>チャンネル名：{result.title}</strong></h2>
-                        <p style={{ display: 'flex', alignItems: 'center' }}>
-                            <strong>チャンネルID:</strong>{' '}
-                            <span style={{ marginLeft: '10px' }}>{result.id}</span>
-                            <button
-                                onClick={() => copyToClipboard(result.id)}
-                                style={{
-                                    marginLeft: '10px',
-                                    backgroundColor: '#007BFF',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    padding: '5px 10px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                }}
-                            >
-                                <FaCopy size={14} />
-                                <span style={{ marginLeft: '5px' }}></span>
-                            </button>
+                        <h2>{result.title}</h2>
+                        <p>
+                            <strong>チャンネルID:</strong> {result.id}
                         </p>
                         <p>
-                            <strong>開設日（JST）:</strong> {result.publishedAt}
+                            <strong>開設日:</strong> {result.publishedAt}
                         </p>
                         <p>
-                            <strong>チャンネル登録者数:</strong>{' '}
-                            {Number(result?.subscriberCount?.replace(/,/g, '') || 0).toLocaleString()}
+                            <strong>チャンネル登録者数:</strong> {result?.subscriberCount || '不明'}
                         </p>
                         <p>
-                            <strong>視聴回数:</strong>{' '}
-                            {Number(result?.viewCount?.replace(/,/g, '') || 0).toLocaleString()}
+                            <strong>視聴回数:</strong> {result?.viewCount || '不明'}
                         </p>
                         <p>
-                            <strong>コンテンツ数:</strong>{' '}
-                            {Number(result?.videoCount?.replace(/,/g, '') || 0).toLocaleString()}
+                            <strong>コンテンツ数:</strong> {result?.videoCount || '不明'}
                         </p>
                     </div>
-                </div>
-            )}
-
-            {toast && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        bottom: '20px',
-                        right: '20px',
-                        backgroundColor: '#333',
-                        color: '#FFF',
-                        padding: '10px 20px',
-                        borderRadius: '8px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                    }}
-                >
-                    {toast}
                 </div>
             )}
         </div>
