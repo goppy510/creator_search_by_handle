@@ -55,7 +55,7 @@ export default function Home() {
         }
     };
 
-    cons copyToClipboard = async (text: string) => {
+    const copyToClipboard = async (text: string) => {
         try {
             await navigator.clipboard.writeText(text);
             setToast('クリップボードにコピーしました！');
