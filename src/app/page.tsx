@@ -1,101 +1,200 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import { FaSearch, FaCopy } from 'react-icons/fa';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    const [handle, setHandle] = useState('');
+    interface ChannelResult {
+        id: string;
+        title: string;
+        thumbnail: string;
+        publishedAt: string;
+        subscriberCount: string;
+        viewCount: string;
+        videoCount: string;
+    }
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    const [result, setResult] = useState<ChannelResult | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [toast, setToast] = useState<string | null>(null);
+
+    const handleSearch = async () => {
+        if (!handle) return alert('ハンドルは必要です');
+        setLoading(true);
+
+        try {
+            const response = await fetch(
+                `https://vhahamm0pb.execute-api.ap-northeast-1.amazonaws.com/v1/youtube_data_api_channel_list?forHandle=${encodeURIComponent(
+                    handle
+                )}`
+            );
+
+            const data = await response.json();
+            const body = JSON.parse(data['body']);
+
+            if (body.length > 0) {
+                const channel = body[0];
+                setResult({
+                    id: channel.id,
+                    title: channel.snippet.title,
+                    thumbnail: channel.snippet.thumbnails.default.url,
+                    publishedAt: new Date(channel.snippet.publishedAt).toLocaleString(),
+                    subscriberCount: channel.statistics?.subscriberCount || '不明',
+                    viewCount: channel.statistics?.viewCount || '不明',
+                    videoCount: channel.statistics?.videoCount || '不明',
+                });
+            } else {
+                alert('該当するチャンネルが見つかりません。');
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            alert('何か問題が発生しました。');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setToast('クリップボードにコピーしました！');
+            setTimeout(() => setToast(null), 3000); // トーストを3秒後に非表示
+        } catch (error) {
+            console.error('コピーに失敗しました:', error);
+            setToast('コピーに失敗しました。');
+            setTimeout(() => setToast(null), 3000);
+        }
+    };
+
+    return (
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: 'Arial, sans-serif',
+                textAlign: 'center',
+                padding: '20px',
+            }}
+        >
+            <h1 style={{ marginBottom: '20px', fontSize: '2rem' }}>ゆーちゅーぶチャンネルID</h1>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                <input
+                    type="text"
+                    value={handle}
+                    onChange={(e) => setHandle(e.target.value)}
+                    placeholder="@handle"
+                    style={{
+                        padding: '15px',
+                        fontSize: '18px',
+                        width: '400px',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        marginRight: '10px',
+                    }}
+                />
+                <button
+                    onClick={handleSearch}
+                    style={{
+                        padding: '20px',
+                        backgroundColor: '#FF6B5E',
+                        color: '#FFF',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                    disabled={loading}
+                >
+                    <FaSearch size={20} />
+                </button>
+            </div>
+
+            {result && (
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        marginTop: '20px',
+                        padding: '20px',
+                        border: '1px solid #ccc',
+                        borderRadius: '8px',
+                        width: '80%',
+                        maxWidth: '800px',
+                    }}
+                >
+                    <img
+                        src={result.thumbnail}
+                        alt="Thumbnail"
+                        style={{
+                            width: '100px',
+                            height: '100px',
+                            marginRight: '20px',
+                            borderRadius: '8px',
+                        }}
+                    />
+                    <div style={{ textAlign: 'left' }}>
+                        <h2><strong>チャンネル名：{result.title}</strong></h2>
+                        <p style={{ display: 'flex', alignItems: 'center' }}>
+                            <strong>チャンネルID:</strong>{' '}
+                            <span style={{ marginLeft: '10px' }}>{result.id}</span>
+                            <button
+                                onClick={() => copyToClipboard(result.id)}
+                                style={{
+                                    marginLeft: '10px',
+                                    backgroundColor: '#007BFF',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    padding: '5px 10px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <FaCopy size={14} />
+                                <span style={{ marginLeft: '5px' }}></span>
+                            </button>
+                        </p>
+                        <p>
+                            <strong>開設日（JST）:</strong> {result.publishedAt}
+                        </p>
+                        <p>
+                            <strong>チャンネル登録者数:</strong>{' '}
+                            {Number(result?.subscriberCount?.replace(/,/g, '') || 0).toLocaleString()}
+                        </p>
+                        <p>
+                            <strong>視聴回数:</strong>{' '}
+                            {Number(result?.viewCount?.replace(/,/g, '') || 0).toLocaleString()}
+                        </p>
+                        <p>
+                            <strong>コンテンツ数:</strong>{' '}
+                            {Number(result?.videoCount?.replace(/,/g, '') || 0).toLocaleString()}
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {toast && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        backgroundColor: '#333',
+                        color: '#FFF',
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    }}
+                >
+                    {toast}
+                </div>
+            )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    );
 }
